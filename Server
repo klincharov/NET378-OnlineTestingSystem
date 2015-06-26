@@ -9,6 +9,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.List;
 import javax.swing.JFrame;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
@@ -150,6 +151,8 @@ public class Server extends JFrame{
         }
     }
     
+    
+    
     private void displayMessage(final String text) throws IOException{           
        SwingUtilities.invokeLater(
             new Runnable(){ // new thread
@@ -162,27 +165,35 @@ public class Server extends JFrame{
         
     }
     
-    void evaluate(int[] givenAnswers) throws JDOMException, IOException{
+    int evaluate(int[] givenAnswers) throws JDOMException, IOException{
+    
     String[] corrects = readXML("corrects");                                    // get the correct answers from XML file
-    int count = 0;                                                              //translate the array to integer
-    for (String str : corrects){
-        int[] correctsInt = new int[corrects.length];
+    int[] correctsInt = new int[corrects.length];
+    int count = 0;
+    int right = 0;
+    
+    for (String str : corrects){                                                //translate the array to integer
         correctsInt[count] = Integer.parseInt(str);
         count++;
     }
     
+    for (int temp = 0; temp < corrects.length; temp++){
+        if(correctsInt[temp] == givenAnswers[temp])
+            right++;
+    }
     
+    return right;
     }
     
     
     String[] readXML(String name) throws JDOMException, IOException{
         try {
+            
         Document doc = new SAXBuilder().build("exam.xml");
         
-
         Element root = doc.getRootElement(); // shortcut for the root element
          
-        java.util.List<Element> questionList = root.getChildren();
+        List<Element> questionList = root.getChildren();
         //final int qCount = questionList.size();                                // ofsetting the questions 
 
         
@@ -208,7 +219,7 @@ public class Server extends JFrame{
             String correct = question.getChild("correct").getText();            // gets the correct answers in the form of 0 1 2 3 strings
                         
             corrects[temp] = correct;
-            //System.out.println(questions[temp] + " " + corrAnswers[temp]);            // test printing questions FIX TABULATIONS !!!
+            //System.out.println(questions[temp]);            // test printing questions FIX TABULATIONS !!!
         }  
         
         for (String corr : corrects) {
