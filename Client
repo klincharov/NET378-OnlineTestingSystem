@@ -3,17 +3,20 @@ import java.io.*;
 import java.net.*;
 import java.awt.event.*;
 import javax.swing.*;
+import jdk.nashorn.internal.ir.CatchNode;
+import org.jdom2.JDOMException;
 
 public class Client extends JFrame implements ActionListener{
    
-    // TODO REDO WITH SENNDING EACH QUESTION THROUGH OUTPUT LIKE MESSAGE AND RETURN ANSWERS !!
     
 //    private JPanel  panel, welcomePanel, mainPanel;
 //    private JTextField userText, userName, facNumber;
 //    private JTextArea chatWindow;
 //    private JButton startButton;
 //    private String message;
-
+    public String[] questions;
+    public String[] answers;
+    public String[] corrects; // maybe without
     
     private ObjectOutputStream output;
     private ObjectInputStream input;
@@ -45,13 +48,13 @@ public class Client extends JFrame implements ActionListener{
         
         }
         nextBut = new JButton("Next");
-        bookBut = new JButton("Bookmark");
+//        bookBut = new JButton("Bookmark");
     
         nextBut.addActionListener(this);
-        bookBut.addActionListener(this);
+//        bookBut.addActionListener(this);
         add(nextBut);
-        add(bookBut);                                                           
-        //set();                                                                    // ?????
+//        add(bookBut);                                                           
+        set();                                                                    // ?????
         
         label.setBounds(30, 40, 450, 20);                                           // int x, int y, int width, int height; X&Y position of upperleft 
        // label.setText("Label");
@@ -60,14 +63,14 @@ public class Client extends JFrame implements ActionListener{
         jb[2].setBounds(50, 140, 100, 20);
         jb[3].setBounds(50, 170, 100, 20);
     
-        nextBut.setBounds(100, 240, 100, 30);
-        bookBut.setBounds(270, 240, 100, 30);
+        nextBut.setBounds(150, 270, 100, 30);
+//        bookBut.setBounds(270, 240, 100, 30);
         
         setTitle("Online Test!");
         setDefaultCloseOperation(EXIT_ON_CLOSE);
         setLayout(null);
         setVisible(true);
-        setSize(600, 350);
+        setSize(400, 350); //600 350 original
         
         setResizable(false);
         setLocationRelativeTo(null);
@@ -79,13 +82,19 @@ public class Client extends JFrame implements ActionListener{
             connectToServer();
             setupStreams();
             
-            String[] questions = getQuestions();
-            String[] answers = getAnswers();
+            questions = getQuestions();
+            answers = getAnswers();
+            //String[] corrects = getCorrects();
+           //for (String str : questions){System.out.println(str);}             //works
             
-
+            
+             
             //testing 
-            displayMessage(Integer.toString(questions.length));
-            displayMessage(Integer.toString(answers.length));
+//            displayMessage(Integer.toString(questions.length));
+//            displayMessage(Integer.toString(answers.length));
+            
+            System.out.println(questions.length);
+            System.out.println(answers.length);
 
                         
            
@@ -95,7 +104,7 @@ public class Client extends JFrame implements ActionListener{
             //displayMessage("\nClient terminated the connection");
         }catch(IOException ex){
             //displayMessage(ex.getMessage());
-            displayMessage("\nDisconnected!");
+            displayMessage("Disconnected!");
         
             
         
@@ -105,23 +114,29 @@ public class Client extends JFrame implements ActionListener{
         }
     //connect to server 
     private void connectToServer() throws IOException{
-        //displayMessage("\nAttempting to connect...");
         connection = new Socket(InetAddress.getByName(serverIP), 8080);
-        displayMessage("\nYou are connected to " + connection.getInetAddress().getHostName());
+        displayMessage("You are connected to " + connection.getInetAddress().getHostName());
     }
     //setup streams
     private void setupStreams() throws IOException {
         output = new ObjectOutputStream(connection.getOutputStream());
         output.flush(); //house keeping
         input = new ObjectInputStream(connection.getInputStream());
-        displayMessage("\nStreams connected! \n");
+        //displayMessage("Streams connected! \n");
     }
     String[] getQuestions() throws IOException, ClassNotFoundException{
         Object obj = input.readObject();
+        displayMessage("Questions received: " + Integer.toString(((String[])obj).length));
         return ((String[])obj);
     }
     
     String[] getAnswers() throws IOException, ClassNotFoundException{
+        Object obj = input.readObject();
+        displayMessage("Answers received: " + Integer.toString(((String[])obj).length));
+        return ((String[])obj);
+           
+    }
+    String[] getCorrects() throws IOException, ClassNotFoundException{
         Object obj = input.readObject();
         return ((String[])obj);
            
@@ -132,6 +147,7 @@ public class Client extends JFrame implements ActionListener{
         //displayMessage("\nClosing everything down...");
 //        ableToType(false);
         try{
+            output.flush();
             output.close();
             input.close();
             connection.close();
@@ -153,14 +169,41 @@ public class Client extends JFrame implements ActionListener{
                 }
         );
     }
+    // TODO why not count++ correct answers ???
+    private double evaluate(int[] givenAnswers) throws JDOMException, IOException, ClassNotFoundException{ //we assume that both given answers and correct one are the same number
+    try {
+        String[] corrects = getCorrects();                                      // get the correct answers from XML file from the server side
+        int[] correctsInt = new int[corrects.length];
+        int count = 0;
+        int right = 0;
+    
+        for (String str : corrects){                                                //translate the array to integer
+            correctsInt[count] = Integer.parseInt(str);
+            count++;
+        }
+    
+        for (int temp = 0; temp < corrects.length; temp++){
+            if(correctsInt[temp] == givenAnswers[temp])
+                right++;
+        }
+        return (double)right * 10;                                                  //somehow returns percentage
+        
+        }catch (NullPointerException ex){
+            displayMessage("Error evaluating ! " + ex.getMessage());
+            return 0;
+        }
+      
+    }
 
     @Override
     public void actionPerformed(ActionEvent evt) {
         if (evt.getSource()== nextBut ){                                          //iterating through everything
-        if(check())
-            count = count + 1;
+            if(check()){
+                count++;
+            }
         
         current++;
+        System.out.println("current: " + current);
         set();
         
         if(current == 9){
@@ -169,155 +212,144 @@ public class Client extends JFrame implements ActionListener{
             }
         }
      
-        if (evt.getActionCommand().equals("Bookmark")){
-            JButton bk = new JButton("Bookmark " + x);
-            bk.setBounds(450, 10 + 30 * x, 120 ,30);
-            add(bk);
-            bk.addActionListener(this);
-            m[x] = current;
-            x++;
-            current++;
-            set();
-            if(current == 9 )
-                bookBut.setText("Results");
-                        
-            setVisible(false);
-            setVisible(true);
-        }
-        for(int i = 0, z = 1; i < x; i++, z++){
-            if(evt.getActionCommand().equals("Bookmark " + z)){
-                if(check())
-                    count = count + 1;
-                now = current;
-                current = m[z];
-                set();
-                ((JButton)evt.getSource()).setEnabled(false);
-                current = now;
-            }
-        }
+//        if (evt.getActionCommand().equals("Bookmark")){
+//            JButton bk = new JButton("Bookmark " + x);
+//            bk.setBounds(450, 10 + 30 * x, 120 ,30);
+//            add(bk);
+//            bk.addActionListener(this);
+//            m[x] = current;
+//            x++;
+//            current++;
+//            System.out.println("current: " + current);
+//
+//            set();
+//            if(current == 9 ){
+//                bookBut.setText("Results");
+//            }           
+//            setVisible(false);
+//            setVisible(true);
+//        }
+//        for(int i = 0, z = 1; i < x; i++, z++){
+//            if(evt.getActionCommand().equals("Bookmark " + z)){
+//                if(check()){
+//                    count = count + 1;
+//                }
+//                now = current;
+//                current = m[z];
+//                        System.out.println("current: " + current);
+//
+//                set();
+//                ((JButton)evt.getSource()).setEnabled(false);
+//                current = now;
+//                        System.out.println("current: " + current);
+//
+//            }
+//        }
         if(evt.getActionCommand().equals("Result")){
-            if(check())
+            if(check()){
                 count = count + 1;
+            }
             current++;
-            //System.out.println("correct ans " + count);
+                    System.out.println("current: " + current);
+
+            System.out.println("Correct " + count);
             JOptionPane.showMessageDialog(this, "Correct " + count);
             System.exit(0);
         
         }
     }
-        void set(){
 
-        }
-    
-//    void set()                                                                  // rework with array
-//    {  
-//        jb[4].setSelected(true);  
-//        if(current==0)  
-//        {  
-//            label.setText("Que1: " + questions[current]);  
-//            jb[0].setText("int");jb[1].setText("Float");jb[2].setText("boolean");jb[3].setText("char");   
-//        }  
-//        if(current==1)  
-//        {  
-//            label.setText("Que2: " + questions[current]);  
-//            jb[0].setText("Swing");jb[1].setText("Applet");jb[2].setText("Object");jb[3].setText("ActionEvent");  
-//        }  
-//        if(current==2)  
-//        {  
-//            label.setText("Que3: " + questions[current]);  
-//            jb[0].setText("swing");jb[1].setText("applet");jb[2].setText("net");jb[3].setText("lang");  
-//        }  
-//        if(current==3)  
-//        {  
-//            label.setText("Que4: " + questions[current]);  
-//            jb[0].setText("lang");jb[1].setText("Swing");jb[2].setText("Applet");jb[3].setText("awt");  
-//        }  
-//        if(current==4)  
-//        {  
-//            label.setText("Que5: " + questions[current]);  
-//            jb[0].setText("Utek");jb[1].setText("Aptech");jb[2].setText("SSS IT");jb[3].setText("jtek");  
-//        }  
-//        if(current==5)  
-//        {  
-//            label.setText("Que6: " + questions[current]);  
-//            jb[0].setText("class");jb[1].setText("int");jb[2].setText("get");jb[3].setText("if");  
-//        }  
-//        if(current==6)  
-//        {  
-//            label.setText("Que7: " + questions[current]);  
-//            jb[0].setText("Swing");jb[1].setText("Actionperformed");jb[2].setText("ActionEvent");  
-//                        jb[3].setText("Button");  
-//        }  
-//        if(current==7)  
-//        {  
-//            label.setText("Que8: " + questions[current]);  
-//            jb[0].setText("toString");jb[1].setText("finalize");jb[2].setText("equals");  
-//                        jb[3].setText("getDocumentBase");         
-//        }  
-//        if(current==8)  
-//        {  
-//            label.setText("Que9: " + questions[current]);  
-//            jb[0].setText("init");jb[1].setText("main");jb[2].setText("start");jb[3].setText("destroy");  
-//        }  
-//        if(current==9)  
-//        {  
-//            label.setText("Que10: " + questions[current]);  
-//            jb[0].setText("JButton");jb[1].setText("JList");jb[2].setText("JButtonGroup");  
-//                        jb[3].setText("JTextArea");  
-//        }  
-//        label.setBounds(30,40,450,20);  
-//        for(int i=0,j=0;i<=90;i+=30,j++)  
-//            jb[j].setBounds(50,80+i,200,20);  
-//    } 
-     boolean check()                                                             //checking answers and if true, ++
-    {  
+        boolean check(){
         if(current==0)  
-            return(jb[1].isSelected());  
-        if(current==1)  
-            return(jb[2].isSelected());  
-        if(current==2)  
-            return(jb[3].isSelected());  
-        if(current==3)  
             return(jb[0].isSelected());  
-        if(current==4)  
-            return(jb[2].isSelected());  
-        if(current==5)  
-            return(jb[2].isSelected());  
-        if(current==6)  
+        if(current==1)  
             return(jb[1].isSelected());  
-        if(current==7)  
+        if(current==2)  
+            return(jb[1].isSelected());  
+        if(current==3)  
             return(jb[3].isSelected());  
+        if(current==4)  
+            return(jb[0].isSelected());  
+        if(current==5)  
+            return(jb[0].isSelected());  
+        if(current==6)  
+            return(jb[3].isSelected());  
+        if(current==7)  
+            return(jb[0].isSelected());  
         if(current==8)  
-            return(jb[1].isSelected());  
+            return(jb[2].isSelected());  
         if(current==9)  
             return(jb[2].isSelected());  
-        return false;  
-    } 
+        return false;
+        }
 
 
+//TODO FIX NOT SETTING THE FIRST (0-TH) QUESTION !!!
+    void set()                                                                  // rework with array
+    {  
+        try{
+        jb[4].setSelected(true);  
+        if(current==0)  
+        {  
+            label.setText("Que1: " + questions[current]);  
+            jb[0].setText("int");jb[1].setText("Float");jb[2].setText("boolean");jb[3].setText("char");   
+        }  
+        if(current==1)  
+        {  
+            label.setText("Que2: " + questions[current]);  
+            jb[0].setText("Swing");jb[1].setText("Applet");jb[2].setText("Object");jb[3].setText("ActionEvent");  
+        }  
+        if(current==2)  
+        {  
+            label.setText("Que3: " + questions[current]);  
+            jb[0].setText("swing");jb[1].setText("applet");jb[2].setText("net");jb[3].setText("lang");  
+        }  
+        if(current==3)  
+        {  
+            label.setText("Que4: " + questions[current]);  
+            jb[0].setText("lang");jb[1].setText("Swing");jb[2].setText("Applet");jb[3].setText("awt");  
+        }  
+        if(current==4)  
+        {  
+            label.setText("Que5: " + questions[current]);  
+            jb[0].setText("Utek");jb[1].setText("Aptech");jb[2].setText("SSS IT");jb[3].setText("jtek");  
+        }  
+        if(current==5)  
+        {  
+            label.setText("Que6: " + questions[current]);  
+            jb[0].setText("class");jb[1].setText("int");jb[2].setText("get");jb[3].setText("if");  
+        }  
+        if(current==6)  
+        {  
+            label.setText("Que7: " + questions[current]);  
+            jb[0].setText("Swing");jb[1].setText("Actionperformed");jb[2].setText("ActionEvent");  
+                        jb[3].setText("Button");  
+        }  
+        if(current==7)  
+        {  
+            label.setText("Que8: " + questions[current]);  
+            jb[0].setText("toString");jb[1].setText("finalize");jb[2].setText("equals");  
+                        jb[3].setText("getDocumentBase");         
+        }  
+        if(current==8)  
+        {  
+            label.setText("Que9: " + questions[current]);  
+            jb[0].setText("init");jb[1].setText("main");jb[2].setText("start");jb[3].setText("destroy");  
+        }  
+        if(current==9)  
+        {  
+            label.setText("Que10: " + questions[current]);  
+            jb[0].setText("JButton");jb[1].setText("JList");jb[2].setText("JButtonGroup");  
+                        jb[3].setText("JTextArea");  
+        }  
+        label.setBounds(30,40,450,20);  
+        for(int i=0,j=0;i<=90;i+=30,j++)  
+            jb[j].setBounds(50,80+i,200,20);  
+    
+    }catch(NullPointerException ex){
+            System.out.println(count); //testing what's going on
 }
-    
-    //send messages to server
-    
-//    private void sendMessage(String text) {
-//        try{
-//            output.writeObject("CLIENT - " + message);
-//            output.flush();
-//            displayMessage("\nCLIENT - " + message);
-//        }catch(IOException ioException){
-//        chatWindow.append("\nError while sending");
-//        }
-//    }
+    }
+}
 
-//able to type 
-//        private void ableToType(final boolean tof){
-//        SwingUtilities.invokeLater(
-//                new Runnable(){
-//                    public void run(){
-//                        userText.setEditable(tof);
-//                    }
-//                }
-//        );
-//        
-//    }
 
