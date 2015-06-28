@@ -7,7 +7,7 @@ import jdk.nashorn.internal.ir.CatchNode;
 import org.jdom2.JDOMException;
 
 public class Client extends JFrame implements ActionListener{
-   
+//TODO REFRACTOR AND RENAME VARS TO MORE MEANINGFUL NAMES!
     
 //    private JPanel  panel, welcomePanel, mainPanel;
 //    private JTextField userText, userName, facNumber;
@@ -36,7 +36,7 @@ public class Client extends JFrame implements ActionListener{
     public Client(String host){
     serverIP = host;
     
-          label = new JLabel();
+        label = new JLabel();
         add(label);
         
         bg = new ButtonGroup();
@@ -48,13 +48,14 @@ public class Client extends JFrame implements ActionListener{
         
         }
         nextBut = new JButton("Next");
+        
 //        bookBut = new JButton("Bookmark");
-    
-        nextBut.addActionListener(this);
 //        bookBut.addActionListener(this);
-        add(nextBut);
 //        add(bookBut);                                                           
-        set();                                                                    // ?????
+
+        nextBut.addActionListener(this);
+        add(nextBut);
+                                                                
         
         label.setBounds(30, 40, 450, 20);                                           // int x, int y, int width, int height; X&Y position of upperleft 
        // label.setText("Label");
@@ -84,6 +85,8 @@ public class Client extends JFrame implements ActionListener{
             
             questions = getQuestions();
             answers = getAnswers();
+            //label.setText(questions[current]);
+            set();
             //String[] corrects = getCorrects();
            //for (String str : questions){System.out.println(str);}             //works
             
