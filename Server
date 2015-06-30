@@ -77,7 +77,7 @@ public class Server extends JFrame{
             }catch(EOFException eofException){ //End_Of_File, in our case End Of Stream
             displayMessage("\nServer ended the connection!"); //the other user leaves
             }finally{
-                //closeCrap();                                                  //clear everything TODO CHECK WHY NOT WORKING!
+                closeCrap();                                                  //TODO WARNING MAY CAUSE PROBLEMSclear everything TODO CHECK WHY NOT WORKING!
         } 
      }
     }catch (IOException ioException){
@@ -88,7 +88,7 @@ public class Server extends JFrame{
     //wait for connection. then display connection info
     private void waitForConnection() throws IOException, JDOMException{
         displayMessage("Reading XML...");
-        displayMessage("\nQuestions found: " + readXML("questions").length);    //TODO UNUSED ARRAY ?
+        displayMessage("\nQuestions found: " + readXML("questions").length);    
         displayMessage("\nWaiting for connection...");
         connection = server.accept();                                           //accept pending requests
         displayMessage("\nNow connected to " + connection.getInetAddress().getHostName());
@@ -115,7 +115,7 @@ public class Server extends JFrame{
                 displayMessage("\n idk wtf that user send!");                   //corrupted input ?
             }catch(IOException ioex){
             }
-        }while(true);                                                           //TODO fix escape sequence
+        }while(true);                                                           //TODO fix escape sequence while (input != "END") bla bla 
     } 
     
     //close streams and sockets
@@ -132,12 +132,13 @@ public class Server extends JFrame{
     }
 
     
-    private void sendArrays() throws JDOMException{                                   //TODO send array
+    private void sendArrays() throws JDOMException{                              
         try{
             
             output.writeObject(readXML("questions"));                          //push the object into output stream
             output.writeObject(readXML("answers"));
             output.writeObject(readXML("corrects"));
+            
             
             output.flush();                                                     //house keeping
 
@@ -184,7 +185,6 @@ public class Server extends JFrame{
         String[] questions = new String[questionList.size()];
         String[] answers = new String[questionList.size() * 4];
         String[] corrects = new String[questionList.size()];
-
         
 //        System.out.println("ROOT: " + root.getName());                          // testing if everything is OK
 //        System.out.println("Right answers: " + abcdAnswers.length);             
