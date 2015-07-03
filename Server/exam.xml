@@ -1,0 +1,84 @@
+<?xml version="1.0"?>
+
+<test>
+	<question>In which continent is the country Japan located ?
+			<answer>Asia</answer>
+			<answer>Europe</answer>
+			<answer>Africa</answer>
+			<answer>America</answer>
+			<correct>0</correct>
+    </question>
+		
+	<question>Which one cannot swim ?
+			<answer>Tuna</answer>
+			<answer>Cow</answer>
+			<answer>Whale</answer>
+			<answer>Lobster</answer>
+			<correct>1</correct>
+    </question>
+		
+	<question>How many points are on a hexagon ?
+			<answer>5</answer>
+			<answer>6</answer>
+			<answer>7</answer>
+			<answer>8</answer>
+			<correct>1</correct>
+    </question>
+			
+	<question>What is 2x(3x10+10) ?
+			<answer>60</answer>
+			<answer>30</answer>
+			<answer>50</answer>
+			<answer>80</answer>
+			<correct>3</correct>
+    </question>
+	
+	<question>What does "html" stands for ?
+			<answer>Hypertext Markup Language</answer>
+			<answer>Hyper Tool Marker Language</answer>
+			<answer>Homepage Text Mini Language</answer>
+			<answer>Hypertranslation Micro Language</answer>
+			<correct>0</correct>			
+	</question>  
+	
+	<question>Which one is incorrect ?
+			<answer>2 > 3</answer>
+			<answer>Fish can swim</answer>
+			<answer>Human can breathe and eat and sleep and walk</answer>
+			<answer>The first letter on the English alphabet is the letter "A"</answer>
+			<correct>0</correct>
+    </question>
+	
+	<question>Which one is not a primary color ?
+			<answer>Gray</answer>
+			<answer>Rose</answer>
+			<answer>Pink</answer>
+			<answer>All of the above</answer>
+			<correct>3</correct>
+    </question>
+	
+	<question>Consider this.  If a number is divided by a number which is equal to that number, what will the result be ?
+			<answer>1</answer>
+			<answer>0</answer>
+			<answer>The same number</answer>
+			<answer>-1</answer>
+			<correct>0</correct>
+	</question>
+	
+	<question>Which color has the longest name ?
+			<answer>Red</answer>
+			<answer>Yellow</answer>
+			<answer>Magenta</answer>
+			<answer>Cyan</answer>
+			<correct>2</correct>
+    </question>
+	
+	<question>Which country is located in the European continent ?
+			<answer>Australia</answer>
+			<answer>Japan</answer>
+			<answer>Great Britain</answer>
+			<answer>Brunei</answer>
+			<correct>2</correct>
+	</question>						
+	
+</test>
