@@ -1,4 +1,3 @@
-
 package client;
 
 import java.io.*;
@@ -8,40 +7,91 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.*;
 
+/**
+ * Client side of the Client-Server online Testing system
+ * 
+ * @author Georgi Klincharov F45686
+ */
 public class Client extends JFrame implements ActionListener {
-//TODO REFRACTOR AND RENAME VARS TO MORE MEANINGFUL NAMES!
-//TODO JAVADOC!!!
 
+    /**
+     * This is the array in which the QUESTIONS received from the Server will be
+     * stored.
+     */
     public String[] questions;
+    /**
+     * This is the array in which the ANSWERS received from the Server will be
+     * stored.
+     */
     public String[] answers;
+    /**
+     * This is the array in which the CORRECT ANSWERS received from the Server
+     * will be stored.
+     */
     public String[] corrects;                                                 //other one hides this field
 
-    private ObjectOutputStream output;
+    /**
+     * The InputStream through which we will communicate with the Server. 
+     * 
+     * No OutputStream is needed at this point. Only if we need to send back the
+     * results in order to be stored on the server
+     */
     private ObjectInputStream input;
 
+    /**
+     * Variable used with the constructor of the Client. 
+     * 
+     * Used for the IP address of the Server we will try to connect to.
+     */
     private final String serverIP;
+    /**
+     * Socket variable used for establishing the connection and input stream.
+     */
     private Socket connection;
-    JLabel label;
-    JRadioButton jb[] = new JRadioButton[5];
+    /**
+     * JLabel used for displaying questions on it with .setText(); method.
+     */
+    JLabel questionLabel;
+    /**
+     * Array of radio buttons for the answers.
+     */
+    JRadioButton jButtons[] = new JRadioButton[5];
+    /**
+     * Buttons for navigation: Next and Bookmark.
+     */
     JButton nextBut, bookBut;
-    ButtonGroup bg;
-
-    int count = 0, current = 0, x = 1, y = 1, now = 0;
-    int m[] = new int[10];
+    /**
+     * Creating a set of buttons with the same ButtonGroup object. 
+     * 
+     * Turning "on" one of those buttons turns off all other buttons in the group.
+     */
+    ButtonGroup buttonGroup;
+    /**
+     * Helper variables for keeping track of what's going on. 
+     * 
+     * They are pretty much self-explanatory.
+     */
+    int count = 0, current = 0, bookmarkCount = 1, now = 0;
+    int[] bookmarkArray = new int[questions.length];
 
     //constructor
+    /**
+     * The constructor of our Client initialized in ClientTest.java
+     *
+     * @param host the address of the server.
+     */
     public Client(String host) {
         serverIP = host;
 
-        label = new JLabel();
-        add(label);
+        questionLabel = new JLabel();
+        add(questionLabel);
 
-        bg = new ButtonGroup();
+        buttonGroup = new ButtonGroup();
 
         for (int i = 0; i < 5; i++) {
-            jb[i] = new JRadioButton();
-            add(jb[i]);
-            bg.add(jb[i]);
+            jButtons[i] = new JRadioButton();
+            add(jButtons[i]);
+            buttonGroup.add(jButtons[i]);
 
         }
         nextBut = new JButton("Next");
@@ -53,11 +103,11 @@ public class Client extends JFrame implements ActionListener {
         nextBut.addActionListener(this);
         add(nextBut);
 
-        label.setBounds(30, 40, 600, 20);                                           // int x, int y, int width, int height; X&Y position of upperleft 
-        jb[0].setBounds(50, 80, 100, 20);
-        jb[1].setBounds(50, 110, 100, 20);
-        jb[2].setBounds(50, 140, 100, 20);
-        jb[3].setBounds(50, 170, 100, 20);
+        questionLabel.setBounds(30, 40, 600, 20);                                           // int bookmarkCount, int y, int width, int height; X&Y position of upperleft 
+        jButtons[0].setBounds(50, 80, 100, 20);
+        jButtons[1].setBounds(50, 110, 100, 20);
+        jButtons[2].setBounds(50, 140, 100, 20);
+        jButtons[3].setBounds(50, 170, 100, 20);
 
         nextBut.setBounds(150, 240, 100, 30);
         bookBut.setBounds(270, 240, 100, 30);
@@ -72,93 +122,141 @@ public class Client extends JFrame implements ActionListener {
         setLocationRelativeTo(null);
     }
 
-    //connect to the server
-    public void startRunning() throws ClassNotFoundException, IOException {
-        try {                            // ORDER IS IMPORTANT !!!
+    /**
+     * Setup and initialize everything and connect to server.
+     *
+     */
+    public void startRunning() {
+        //EOFException ???
 
-            connectToServer();
-            setupStreams();
-
-            questions = getQuestions();
-            answers = getAnswers();
-            corrects = getCorrects();
-            //label.setText(questions[current]);
-            set();
-
-            //testing what we've got
-            System.out.println(questions.length + " " + answers.length + " " + corrects.length);
-
-            for (String str : corrects) {
-                System.out.print(Integer.parseInt(str) + " ");
-
-            }
-            System.out.println("");
-
-        } catch (EOFException eofException) {
-            //displayMessage("\nClient terminated the connection");
-        } catch (IOException ex) {
-            //displayMessage(ex.getMessage());
-            displayMessage("Disconnected!");
-            setVisible(false);          
-            System.exit(0);
-
-        } finally {
-            closeCrap();
-
-        }
+        connectToServer();
+        setupStream();
+        questions = getQuestions();
+        answers = getAnswers();
+        corrects = getCorrects();
+        set();
     }
-    //connect to server 
+    /**
+     * Container for the upcoming messages. Everything else will be appended at
+     * the end and then displayed.
+     */
     String message;
 
-    private void connectToServer() throws IOException {
-        connection = new Socket(InetAddress.getByName(serverIP), 8080);
-        message = ("You are connected to " + connection.getInetAddress().getHostName());
-    }
-
-    //setup streams
-    private void setupStreams() throws IOException {
-        output = new ObjectOutputStream(connection.getOutputStream());
-        output.flush(); //house keeping
-        input = new ObjectInputStream(connection.getInputStream());
-        //displayMessage("Streams connected! \n");
-    }
-
-    String[] getQuestions() throws IOException, ClassNotFoundException {
-        Object obj = input.readObject();
-        message += "\nQuestions received: " + Integer.toString(((String[]) obj).length);
-        //displayMessage("Questions received: " + Integer.toString(((String[])obj).length));
-        return ((String[]) obj);
-    }
-
-    String[] getAnswers() throws IOException, ClassNotFoundException {
-        Object obj = input.readObject();
-        message += "\nAnswers received: " + Integer.toString(((String[]) obj).length);
-        displayMessage(message);
-        return ((String[]) obj);
-
-    }
-
-    String[] getCorrects() throws IOException, ClassNotFoundException {
-        Object obj = input.readObject();
-        return ((String[]) obj);
-
-    }
-
-    //close the streams and sockets
-    private void closeCrap() {
-        //displayMessage("\nClosing everything down...");
-//        ableToType(false);
+    /**
+     * Establish the connection and append the message.
+     *
+     * @throws IOException when the connection couldn't be established.
+     */
+    private void connectToServer() {
         try {
-            output.flush();
-            output.close();
+            connection = new Socket(InetAddress.getByName(serverIP), 8080);
+            message = ("You are connected to " + connection.getInetAddress().getHostName());
+        } catch (IOException ex) {
+            displayMessage("Error connecting to server " + ex.getMessage());
+            closeCrap();
+        }
+
+    }
+
+    /**
+     * Setup the Input Stream.
+     *
+     * @throws IOException when the streams couldn't be established.
+     */
+    private void setupStream() {
+
+        try {
+            input = new ObjectInputStream(connection.getInputStream());
+        } catch (IOException ex) {
+            displayMessage("Error establishing stream! " + ex.getMessage());
+        }
+    }
+
+    /**
+     * This method uses the ObjectInpuStream and reads the object. The object is
+     * then casted as a String array as needed.
+     *
+     * Order for sending/getting arrays is important!
+     *
+     * @return String[] array with the exam's questions.
+     */
+    String[] getQuestions() {
+        try {
+            Object obj = input.readObject();
+            message += "\nQuestions received: " + Integer.toString(((String[]) obj).length);
+            //displayMessage("Questions received: " + Integer.toString(((String[])obj).length));
+            return ((String[]) obj);
+        } catch (IOException | ClassNotFoundException ex) {
+            displayMessage("Error getting questions! " + ex.getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * This method uses the ObjectInpuStream and reads the object. The object is
+     * then casted as a String array as needed.
+     *
+     * Order for sending/getting arrays is important!
+     *
+     * @return String[] array with the exam's answers.
+     */
+    String[] getAnswers() {
+        try {
+            Object obj = input.readObject();
+            message += "\nAnswers received: " + Integer.toString(((String[]) obj).length);
+
+            return ((String[]) obj);
+        } catch (IOException | ClassNotFoundException ex) {
+            displayMessage("Error getting answers! " + ex.getMessage());
+            return null;
+        }
+
+    }
+
+    /**
+     * This method uses the ObjectInpuStream and reads the object. The object is
+     * then casted as a String array as needed.
+     *
+     * Order for sending/getting arrays is important!
+     *
+     * @return String[] array with the exam's CORRECT answers.
+     */
+    String[] getCorrects() {
+        try {
+            Object obj = input.readObject();
+            message += "\nCorrect answers received: " + Integer.toString(((String[]) obj).length);
+
+            displayMessage(message);
+
+            return ((String[]) obj);
+        } catch (IOException | ClassNotFoundException ex) {
+            displayMessage("Error getting correct answers! " + ex.getMessage());
+            return null;
+        }
+
+    }
+
+    /**
+     * This method closes all the connections and performs housekeeping.
+     *
+     */
+    private void closeCrap() {
+
+        try {
             input.close();
             connection.close();
         } catch (IOException | NullPointerException ex) {
+            displayMessage("Error terminating connections! " + ex.getMessage());
 
         }
     }
 
-    //display message; change/update chatWindow
+    /**
+     * This method displays the given String and displays it.
+     *
+     * @param text the string passed to the method, to be displayed in an
+     * MessageDialog
+     */
     private void displayMessage(final String text) {
         SwingUtilities.invokeLater(
                 new Runnable() {
@@ -171,8 +269,15 @@ public class Client extends JFrame implements ActionListener {
         );
     }
 
+    /**
+     * Listens for action events and performs the according actions
+     *
+     * @param evt ActionEvent
+     */
     @Override
     public void actionPerformed(ActionEvent evt) {
+
+        // if the source is the "Next" button
         if (evt.getSource() == nextBut) {
             try {
                 //iterating through everything
@@ -186,38 +291,49 @@ public class Client extends JFrame implements ActionListener {
             current++;
             set();
 
+            // if we have reached the last question:
             if (current == questions.length) {
                 nextBut.setEnabled(false);
+
+                //"Bookmark" button is now "Results" button
                 bookBut.setText("Results");
-                
-                jb[4].setSelected(true); //remove selector
-                label.setText("");
-                
+
+                // remove selector - nothing is selected
+                jButtons[4].setSelected(true);
+                // remove last question - nothing is displayed 
+                questionLabel.setText("");
+
+                // remove all answers - nothing is displayed
                 for (int i = 0; i < 4; i++) {
-                    jb[i].setText("");
-                    
+                    jButtons[i].setText("");
+
                 }
 
             }
         }
 
+        // if the source is the "Bookmark" button:
         if (evt.getActionCommand().equals("Bookmark")) {
-            JButton bk = new JButton("Bookmark " + x);
-            bk.setBounds(450, 10 + 30 * x, 120, 30);
+
+            // create new bookmark for the question and place it 
+            JButton bk = new JButton("Bookmark " + bookmarkCount);
+            bk.setBounds(450, 10 + 30 * bookmarkCount, 120, 30);
             add(bk);
             bk.addActionListener(this);
-            m[x] = current;
-            x++;
+            bookmarkArray[bookmarkCount] = current;
+            bookmarkCount++;
             current++;
 
             set();
             if (current == questions.length - 1) {
                 bookBut.setText("Results");
             }
+            // refresh the GUI with the new buttons
             setVisible(false);
             setVisible(true);
         }
-        for (int i = 0, z = 1; i < x; i++, z++) {
+        // loop through the placed bookmarks
+        for (int i = 0, z = 1; i < bookmarkCount; i++, z++) {
             if (evt.getActionCommand().equals("Bookmark " + z)) {
                 try {
                     if (check()) {
@@ -227,14 +343,16 @@ public class Client extends JFrame implements ActionListener {
                     Logger.getLogger(Client.class.getName()).log(Level.SEVERE, null, ex);
                 }
                 now = current;
-                current = m[z];
+                current = bookmarkArray[z];
 
                 set();
+                // disable the used bookmark button
                 ((JButton) evt.getSource()).setEnabled(false);
                 current = now;
 
             }
         }
+        // if the source is the "Results" button:
         if (evt.getActionCommand().equals("Results")) {  //!!! Results != Result
 
             current++;
@@ -245,61 +363,66 @@ public class Client extends JFrame implements ActionListener {
 
     }
 
-    void set() { //WORKING!
+    /**
+     * Method for setting/displaying information on the screen.
+     *
+     */
+    void set() {
+
         try {
-            //sets the question label
-            jb[4].setSelected(true); // everything is left blank so no accidental point by just clicking next could occur
-
+            // every answer's selector is left blank so no accidental point by 
+            // just clicking next could occur
+            jButtons[4].setSelected(true); 
+            
+            // loop through questions and sets the question questionLabel
             if (current < questions.length) {
-                label.setText("Question " + (current + 1) + ": " + questions[current]);
+                questionLabel.setText("Question " + (current + 1) + ": " + questions[current]);
 
-                int l = current * 4;
+                // helping integer for offsetting the answers
+                final int L = current * 4;
+                
+                // loop and place every pair of 4 answers
                 for (int k = 0; k < 4; k++) {
 
-                    jb[k].setText(answers[k + l]);
+                    jButtons[k].setText(answers[k + L]);
 
                 }
 
-//            if (current < questions.length) {
-//                label.setText("Question " + (current + 1) + ": " + questions[current]);
-//                for (int j = current; j < (current * 4); j++) {
-//
-//                    // k goes through 0, 1 ,2 ,3 needed for the radio buttons
-//                    int l = current * 4;
-//                    for (int k = 0; k < 4; k++) { // was (i+3)
-//                        System.out.println("Cur= " + current + " * 4= " + (current * 4) + " J= " + j + " K= " + k);
-//
-//                        //System.out.println(" J= " + j + " K= " + k);
-//                        jb[k].setText(answers[j+k] + " @ " + (j+k));
-//
-//                    }
-//                }
-//            }
                 for (int i = 0, j = 0; i <= 90; i += 30, j++) {
-                    jb[j].setBounds(50, 80 + i, 600, 20);
+                    jButtons[j].setBounds(50, 80 + i, 600, 20);
                 }
             }
 
         } catch (NullPointerException ex) {
-            System.out.println("Error at: " + count + ex.getMessage()); //testing what's going on
+            System.out.println("Error at question number " + count + ex.getMessage()); //testing what's going on
         }
     }
 
+    /**
+     * Checks if the selected answer is selected 
+     * 
+     * @return boolean for the question. Increments count if true. 
+     * 
+     * @throws IOException
+     * @throws ClassNotFoundException 
+     */
     boolean check() throws IOException, ClassNotFoundException {
 
-        // converting to integers for easier comparison
+        // converting from String to int for easier comparison
         int[] corrInt = new int[corrects.length];
 
         for (int i = 0; i < corrects.length; i++) {
-            corrInt[i] = Integer.parseInt(corrects[i]);                     // or .valueOf ?
+            corrInt[i] = Integer.parseInt(corrects[i]);                     
         }
 
+        // loop through the correct answers
         for (int i = 0; i < corrects.length; i++) {
 
-            //System.out.print(corrInt[i] + " ");
+            // checks if the correct answer is selected
+            // also can be printed to console for easier testing
             if (current == i) {
-                System.out.println(jb[corrInt[i]].isSelected());
-                return jb[corrInt[i]].isSelected();
+                
+                return jButtons[corrInt[i]].isSelected();
 
             }
         }
