@@ -9,7 +9,7 @@ import javax.swing.*;
 
 /**
  * Client side of the Client-Server online Testing system
- * 
+ *
  * @author Georgi Klincharov F45686
  */
 public class Client extends JFrame implements ActionListener {
@@ -31,16 +31,16 @@ public class Client extends JFrame implements ActionListener {
     public String[] corrects;                                                 //other one hides this field
 
     /**
-     * The InputStream through which we will communicate with the Server. 
-     * 
+     * The InputStream through which we will communicate with the Server.
+     *
      * No OutputStream is needed at this point. Only if we need to send back the
      * results in order to be stored on the server
      */
     private ObjectInputStream input;
 
     /**
-     * Variable used with the constructor of the Client. 
-     * 
+     * Variable used with the constructor of the Client.
+     *
      * Used for the IP address of the Server we will try to connect to.
      */
     private final String serverIP;
@@ -61,18 +61,19 @@ public class Client extends JFrame implements ActionListener {
      */
     JButton nextBut, bookBut;
     /**
-     * Creating a set of buttons with the same ButtonGroup object. 
-     * 
-     * Turning "on" one of those buttons turns off all other buttons in the group.
+     * Creating a set of buttons with the same ButtonGroup object.
+     *
+     * Turning "on" one of those buttons turns off all other buttons in the
+     * group.
      */
     ButtonGroup buttonGroup;
     /**
-     * Helper variables for keeping track of what's going on. 
-     * 
+     * Helper variables for keeping track of what's going on.
+     *
      * They are pretty much self-explanatory.
      */
     int count = 0, current = 0, bookmarkCount = 1, now = 0;
-    int[] bookmarkArray = new int[questions.length];
+    int[] bookmarkArray;
 
     //constructor
     /**
@@ -81,6 +82,7 @@ public class Client extends JFrame implements ActionListener {
      * @param host the address of the server.
      */
     public Client(String host) {
+
         serverIP = host;
 
         questionLabel = new JLabel();
@@ -153,7 +155,7 @@ public class Client extends JFrame implements ActionListener {
             message = ("You are connected to " + connection.getInetAddress().getHostName());
         } catch (IOException ex) {
             displayMessage("Error connecting to server " + ex.getMessage());
-            closeCrap();
+            close();
         }
 
     }
@@ -240,7 +242,7 @@ public class Client extends JFrame implements ActionListener {
      * This method closes all the connections and performs housekeeping.
      *
      */
-    private void closeCrap() {
+    private void close() {
 
         try {
             input.close();
@@ -276,7 +278,7 @@ public class Client extends JFrame implements ActionListener {
      */
     @Override
     public void actionPerformed(ActionEvent evt) {
-
+        this.bookmarkArray = new int[questions.length];
         // if the source is the "Next" button
         if (evt.getSource() == nextBut) {
             try {
@@ -372,15 +374,15 @@ public class Client extends JFrame implements ActionListener {
         try {
             // every answer's selector is left blank so no accidental point by 
             // just clicking next could occur
-            jButtons[4].setSelected(true); 
-            
+            jButtons[4].setSelected(true);
+
             // loop through questions and sets the question questionLabel
             if (current < questions.length) {
                 questionLabel.setText("Question " + (current + 1) + ": " + questions[current]);
 
                 // helping integer for offsetting the answers
                 final int L = current * 4;
-                
+
                 // loop and place every pair of 4 answers
                 for (int k = 0; k < 4; k++) {
 
@@ -394,17 +396,17 @@ public class Client extends JFrame implements ActionListener {
             }
 
         } catch (NullPointerException ex) {
-            System.out.println("Error at question number " + count + ex.getMessage()); //testing what's going on
+            System.out.println("Error at question number " + count + ex.getMessage());
         }
     }
 
     /**
-     * Checks if the selected answer is selected 
-     * 
-     * @return boolean for the question. Increments count if true. 
-     * 
+     * Checks if the selected answer is selected
+     *
+     * @return boolean for the question. Increments count if true.
+     *
      * @throws IOException
-     * @throws ClassNotFoundException 
+     * @throws ClassNotFoundException
      */
     boolean check() throws IOException, ClassNotFoundException {
 
@@ -412,18 +414,17 @@ public class Client extends JFrame implements ActionListener {
         int[] corrInt = new int[corrects.length];
 
         for (int i = 0; i < corrects.length; i++) {
-            corrInt[i] = Integer.parseInt(corrects[i]);                     
+            corrInt[i] = Integer.parseInt(corrects[i]);
         }
 
         // loop through the correct answers
         for (int i = 0; i < corrects.length; i++) {
 
             // checks if the correct answer is selected
-            // also can be printed to console for easier testing
             if (current == i) {
                 
+                // good point to print to console for easier testing
                 return jButtons[corrInt[i]].isSelected();
-
             }
         }
 
