@@ -1,23 +1,28 @@
 package server;
 
-import java.io.EOFException;
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import javax.swing.JFrame;
-import static javax.swing.JFrame.EXIT_ON_CLOSE;
-import javax.swing.JScrollPane;
-import javax.swing.JTextArea;
-import javax.swing.SwingUtilities;
+//~--- non-JDK imports --------------------------------------------------------
 import org.jdom2.Document;
 import org.jdom2.Element;
 import org.jdom2.JDOMException;
 import org.jdom2.input.SAXBuilder;
+
+//~--- JDK imports ------------------------------------------------------------
+import java.io.IOException;
+import java.io.ObjectOutputStream;
+
+import java.net.ServerSocket;
+import java.net.Socket;
+
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import javax.swing.JFrame;
+import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
+import javax.swing.SwingUtilities;
+
+import static javax.swing.JFrame.EXIT_ON_CLOSE;
 
 /**
  * Handler class which handles every new Client-thread.
@@ -26,12 +31,10 @@ import org.jdom2.input.SAXBuilder;
  */
 public class Handler extends JFrame implements Runnable {
 
-    private final JTextArea mainWindow;
-
-    private ObjectOutputStream output;
-    private ObjectInputStream input;
     private static ServerSocket server;
-    private Socket connection;
+    private final JTextArea mainWindow;
+    private ObjectOutputStream output;
+    private final Socket connection;
 
     /**
      * Constructor for the handler of the used in Server.java
@@ -39,7 +42,6 @@ public class Handler extends JFrame implements Runnable {
      * @param client which accepted from the socket.
      */
     public Handler(Socket client) {
-
         this.connection = client;
 
         // setting up the window and it's elements
@@ -56,44 +58,34 @@ public class Handler extends JFrame implements Runnable {
     }
 
     /**
-     *
+     * Run everything.
      */
     @Override
     public void run() {
-        ServerSocket server = null;
+
         try {
-            server = new ServerSocket(8080); // 100 people allowed to wait on port 8080 (backlog, queue length)
+            server = new ServerSocket(8080);    // 100 people allowed to wait on port 8080 (backlog, queue length)
         } catch (IOException ex) {
-            displayMessage("Error establishing connection! " + ex.getMessage());
+            displayMessage("Error establishing connection! "
+                    + "Port already in use!");
         }
+
         displayMessage("Reading XML...");
+
         try {
-            displayMessage("\nQuestions found: " + readXML("questions").length);
+            displayMessage("Questions found: " + readXML("questions").length);
         } catch (JDOMException | IOException ex) {
             displayMessage("Error reading XML data! " + ex.getMessage());
         }
-        displayMessage("\nWaiting for connection...");
-        displayMessage("\nNow connected to " + connection.getInetAddress().getHostName());
+        displayMessage("Waiting for connection...");
+        displayMessage("Now connected to " + connection.getInetAddress().getHostName()
+                + " / " + connection.getLocalPort());
 
-        //runs forever
+        // runs forever
         while (true) {
-            try { //ORDER IS IMPORTANT!!!!
-
-                setupStream();
-
-                sendArrays();                                                   // readXML inside
-
-            } catch (JDOMException ex) {
-                displayMessage("Error: XML file corrupt or missing!");
-            } finally {
-                try {
-                    close();
-                } catch (Exception ex) {
-                    Logger.getLogger(Handler.class.getName()).log(Level.SEVERE, null, ex);
-                }
-            }
+            setupStream();
+            sendArrays();
         }
-
     }
 
     /**
@@ -104,11 +96,10 @@ public class Handler extends JFrame implements Runnable {
     private void setupStream() {
         try {
             output = new ObjectOutputStream(connection.getOutputStream());
-            output.flush();                                                         //clear leftover data
+            output.flush();    // clear leftover data
 
-            displayMessage("\nStreams connected!");
         } catch (IOException ex) {
-            displayMessage("Error establishing streams! " + ex.getMessage());
+            ex.printStackTrace();
         }
     }
 
@@ -117,13 +108,12 @@ public class Handler extends JFrame implements Runnable {
      *
      */
     private void close() {
-        System.out.println("\nClosing connections... \n");
+        System.out.println("Closing connections... \n");
 
         try {
-
             output.close();
 
-            //close the whole socket
+            // close the whole socket
             connection.close();
         } catch (IOException ex) {
             System.out.println("Could not close connection! " + ex.getMessage());
@@ -136,24 +126,24 @@ public class Handler extends JFrame implements Runnable {
      *
      * @throws JDOMException in case of problems with the XML file.
      */
-    private void sendArrays() throws JDOMException {
-        try {
+    private void sendArrays() {
 
-            output.writeObject(readXML("questions"));                          //push the object into output stream
+        try {
+            output.writeObject(readXML("questions"));    // push the object into output stream
             output.writeObject(readXML("answers"));
             output.writeObject(readXML("corrects"));
-
-            output.flush();                                                     //house keeping
-
-            displayMessage("\nArrays sent!");
+            output.flush();                              // house keeping
 
             // good place to test what's coming out from readXML();
-//            System.out.print(Integer.toString(readXML("questions").length)
-//                    + " " + Integer.toString(readXML("answers").length)
-//                    + " " + Integer.toString(readXML("corrects").length));
+//          System.out.print(Integer.toString(readXML("questions").length)
+//                  + " " + Integer.toString(readXML("answers").length)
+//                  + " " + Integer.toString(readXML("corrects").length));
         } catch (IOException ex) {
-            displayMessage("\nError sending! " + ex.getMessage());
+            Logger.getLogger(Handler.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (JDOMException ex) {
+            Logger.getLogger(Handler.class.getName()).log(Level.SEVERE, null, ex);
         }
+
     }
 
     /**
@@ -163,14 +153,12 @@ public class Handler extends JFrame implements Runnable {
      * MessageDialog
      */
     private void displayMessage(final String text) {
-        SwingUtilities.invokeLater(new Runnable() { // new thread
+        SwingUtilities.invokeLater(new Runnable() {    // new thread
             @Override
             public void run() {
-                mainWindow.append(text); //updates the chat window text are with new message
+                mainWindow.append("\n" + text);               // updates the chat window text are with new message
             }
-        }
-        );
-
+        });
     }
 
     /**
@@ -189,7 +177,6 @@ public class Handler extends JFrame implements Runnable {
      * @throws IOException when the file is missing or couldn't be read
      */
     private String[] readXML(String name) throws JDOMException, IOException {
-
         try {
             Document doc = new SAXBuilder().build("exam.xml");
 
@@ -214,7 +201,6 @@ public class Handler extends JFrame implements Runnable {
 
                 // get the answers
                 for (int i = 0; i < 4; i++) {
-
                     answers[temp * 4 + i] = questionList.get(temp).getChildren("answer").get(i).getText();
                 }
 
@@ -222,37 +208,36 @@ public class Handler extends JFrame implements Runnable {
                 Element question = questionList.get(temp);
 
                 // convert correct to string
-                String correct = question.getChild("correct").getText();            // gets the correct answers in the form of 0 1 2 3 strings
+                String correct = question.getChild("correct").getText();    // gets the correct answers in the form of 0 1 2 3 strings
 
                 corrects[temp] = correct;
 
                 // good place to test print everything
-                //System.out.println(questions[temp]);            
+                // System.out.println(questions[temp]);
             }
-            
-            // good place for test printing
-//            for (String corr : corrects) {
-//                //System.out.print(corr + " ");
-//            }
-//            for (String answer : answers) {
-//                //System.out.println(answer);
-//            }
 
+            // good place for test printing
+//          for (String corr : corrects) {
+//              //System.out.print(corr + " ");
+//          }
+//          for (String answer : answers) {
+//              //System.out.println(answer);
+//          }
             // determinig what to return
             switch (name) {
                 case "questions":
                     return questions;
+
                 case "answers":
                     return answers;
+
                 case "corrects":
                     return corrects;
-
             }
-
         } catch (JDOMException | IOException ex) {
             displayMessage("XML error or missing file!\n" + ex.getMessage());
         }
+
         return null;
     }
-
 }
